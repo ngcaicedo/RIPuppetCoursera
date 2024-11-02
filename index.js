@@ -437,6 +437,15 @@ async function interactWithObjects(elementList, page, currentState, link){
 
 // Method to interact with a single object depending on it's type
 async function interactWithObject(object, page, currentState, interactionNumber, link){
+
+  // Intenta cerrar cualquier modal o overlay que pueda bloquear el clic
+  const modalCloseButton = await page.$('.epm-modal-container'); // Cambia el selector según corresponda
+  if (modalCloseButton) {
+    await modalCloseButton.click();
+    console.log("Modal cerrada antes de la interacción.");
+    await page.waitForSelector('.epm-modal-container', { state: 'hidden', timeout: 5000 });
+  }
+
   if(object.type === 'input'){
     let elementHandle = object.element;
     let location = await  getCoordinates(elementHandle, page);
@@ -597,6 +606,9 @@ async function elementScreenshot(location, currentState, page, moment){
   });
 }
 async function elementScreenshotwHandle(element, currentState, moment){
+
+  await element.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }));
+
   await element.screenshot({
     path: screenshots_directory + '/' + 'state_' + currentState + '_interaction_' + (statesDiscovered) + moment + '.png'
   }).catch((err)=>{

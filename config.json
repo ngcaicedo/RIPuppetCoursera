@@ -1,7 +1,7 @@
 {
     "url": "http://localhost:3005/ghost/",
     "headless": true,
-    "depthLevels": 1,
+    "depthLevels": 5,
     "inputValues": true,
     "values": {"blog-title": "Ghost Ripper",
         "password": "Prueba_123456",
