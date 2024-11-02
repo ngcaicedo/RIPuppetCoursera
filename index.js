@@ -607,8 +607,6 @@ async function elementScreenshot(location, currentState, page, moment){
 }
 async function elementScreenshotwHandle(element, currentState, moment){
 
-  await element.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }));
-
   await element.screenshot({
     path: screenshots_directory + '/' + 'state_' + currentState + '_interaction_' + (statesDiscovered) + moment + '.png'
   }).catch((err)=>{
