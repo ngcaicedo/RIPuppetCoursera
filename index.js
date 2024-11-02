@@ -5,6 +5,8 @@ const path = require('path');
 const { faker } = require('@faker-js/faker');
 const parser = require('node-html-parser');
 
+faker.seed(123)
+
 //Constants
 var screenshots_directory = './screenshots';
 const beforeInteraction = 'BEFORE';
@@ -130,7 +132,24 @@ async function recursiveExploration(page, link, depth, parentState){
   if(depth > depthLevels) {
     console.log("Depth levels reached. Exploration stopped")
     return;
-  } 
+  }
+
+  if (depth === 0) {
+    console.log("Enforcing login");
+    await page.goto(link, { waitUntil: 'networkidle' }).catch((err) => {
+      console.log(err);
+    });
+    await new Promise(r => setTimeout(r, 1000));
+    await page.screenshot({ path: './Login.png' });
+    await page.type('input[id="identification"]', 'mario@b.com');
+    await page.type('input[id="password"]', 'Prueba_123456');
+    await new Promise(r => setTimeout(r, 1000));
+    await page.screenshot({ path: './Login-datos.png' })
+    await page.click('id=ember5')
+    await new Promise(r => setTimeout(r, 1000));
+    await page.screenshot({ path: './dashboard.png' })
+  }
+
   console.log("Exploring");
   await page.goto(link, {waitUntil: 'networkidle'}).catch((err)=>{
     console.log(err); 
@@ -634,7 +653,7 @@ async function fillInput(elementHandle, page){
   }
   else if(type === 'search'){
     elementHandle.click();
-    page.keyboard.type(faker.random.alphaNumeric());
+    page.keyboard.type(faker.string.alphanumeric());
   }
   else if(type === 'password'){
     elementHandle.click();
@@ -646,14 +665,13 @@ async function fillInput(elementHandle, page){
   }
   else if (type === 'tel'){
     elementHandle.click();
-    page.keyboard.type(faker.phone.phoneNumber()) ;
+    page.keyboard.type(faker.phone.number()) ;
   }
   else if (type === 'number'){
     elementHandle.click();
-    page.keyboard.type(faker.random.number) ;
+    page.keyboard.type(faker.number.int()) ;
   }
   else if(type === 'submit' || type === 'radio' || type === 'checkbox'){
     elementHandle.click();
   }
 }
-
