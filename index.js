@@ -441,9 +441,15 @@ async function interactWithObject(object, page, currentState, interactionNumber,
   // Intenta cerrar cualquier modal o overlay que pueda bloquear el clic
   const modalCloseButton = await page.$('.epm-modal-container'); // Cambia el selector según corresponda
   if (modalCloseButton) {
-    await modalCloseButton.click();
-    console.log("Modal cerrada antes de la interacción.");
-    await page.waitForSelector('.epm-modal-container', { state: 'hidden', timeout: 5000 });
+    try {
+      await modalCloseButton.click();
+      console.log("Modal cerrada antes de la interacción.");
+      await page.waitForSelector('.epm-modal-container', { state: 'hidden', timeout: 5000 }).catch(e => {
+        console.log('Could not hidden modal');
+      });
+    } catch (error) {
+      console.log("No se pudo hacer clic para cerrar el modal:", error);
+    }
   }
 
   if(object.type === 'input'){
@@ -607,11 +613,16 @@ async function elementScreenshot(location, currentState, page, moment){
 }
 async function elementScreenshotwHandle(element, currentState, moment){
 
-  await element.screenshot({
-    path: screenshots_directory + '/' + 'state_' + currentState + '_interaction_' + (statesDiscovered) + moment + '.png'
-  }).catch((err)=>{
-    console.log(err);
-  });
+  if (await element.isVisible()){
+    await element.screenshot({
+      path: screenshots_directory + '/' + 'state_' + currentState + '_interaction_' + (statesDiscovered) + moment + '.png'
+    }).catch((err)=>{
+      console.log(err);
+    });
+  }else{
+    console.log('No se puede ejecutar el screenshot. Elemento oculto');
+  }
+
 }
 
 function createErrorGraph(){
