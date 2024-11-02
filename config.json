@@ -1,12 +1,12 @@
 {
-    "url": "https://thesoftwaredesignlab.github.io",
+    "url": "http://localhost:3005/ghost/",
     "headless": true,
-    "depthLevels": 1,
-    "inputValues": false,
-    "values": {"userInput": "Mario",
-        "passwordInput": "123456",
-        "passwordTwoInput": "123456",
-        "nameInput": "Mario",
-        "emailInput": "mario@b.com"},
+    "depthLevels": 2,
+    "inputValues": true,
+    "values": {"blog-title": "Ghost Ripper",
+        "password": "Prueba_123456",
+        "name": "ripper",
+        "email": "mario@b.com",
+        "identification": "mario@b.com"},
     "browsers": ["chromium", "webkit", "firefox"]
 }

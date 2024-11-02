@@ -5,6 +5,8 @@ const path = require('path');
 const { faker } = require('@faker-js/faker');
 const parser = require('node-html-parser');
 
+faker.seed(123); // Cambia 123 por cualquier número para generar valores específicos
+
 //Constants
 var screenshots_directory = './screenshots';
 const beforeInteraction = 'BEFORE';
@@ -130,7 +132,24 @@ async function recursiveExploration(page, link, depth, parentState){
   if(depth > depthLevels) {
     console.log("Depth levels reached. Exploration stopped")
     return;
-  } 
+  }
+
+  if(depth === 0){
+    console.log("Enforcing login");
+    await page.goto(link, {waitUntil: 'networkidle'}).catch((err)=>{
+      console.log(err); 
+    });
+    await new Promise(r => setTimeout(r, 1000));
+    await page.screenshot({path: './Login.png'});
+    await page.type('input[id="identification"]', 'mario@b.com');
+    await page.type('input[id="password"]', 'Prueba_123456');
+    await new Promise(r => setTimeout(r, 1000));
+    await page.screenshot({path: './Login-datos.png'})
+    await page.click('id=ember5')
+    await new Promise(r => setTimeout(r, 1000));
+    await page.screenshot({path: './dashboard.png'})
+  }
+
   console.log("Exploring");
   await page.goto(link, {waitUntil: 'networkidle'}).catch((err)=>{
     console.log(err); 
@@ -374,14 +393,14 @@ async function getButtons(page, elementList){
   let buttons = await page.$$('button');
   let button;
   for (let i = 0; i < buttons.length ; i++ ){
-    let disabled = page.evaluate((btn)=>{
-      return typeof btn.getAttribute("disabled") === "string" || btn.getAttribute("aria-disabled") === "true";
+    let disabled = await page.evaluate((btn)=>{
+      return typeof btn.getAttribute("disabled") === 'string' || btn.getAttribute("aria-disabled") === "true";
     }, buttons[i]);
     if(!disabled){
       button = {
         'type' : 'button',
         'element': buttons[i],
-        'url': page.url()
+        'url': await page.url()
       }
       elementList.push(button);
     }
@@ -418,6 +437,21 @@ async function interactWithObjects(elementList, page, currentState, link){
 
 // Method to interact with a single object depending on it's type
 async function interactWithObject(object, page, currentState, interactionNumber, link){
+
+  // Intenta cerrar cualquier modal o overlay que pueda bloquear el clic
+  const modalCloseButton = await page.$('.epm-modal-container'); // Cambia el selector según corresponda
+  if (modalCloseButton) {
+    try {
+      await modalCloseButton.click();
+      console.log("Modal cerrada antes de la interacción.");
+      await page.waitForSelector('.epm-modal-container', { state: 'hidden', timeout: 5000 }).catch(e => {
+        console.log('Could not hidden modal');
+      });
+    } catch (error) {
+      console.log("No se pudo hacer clic para cerrar el modal:", error);
+    }
+  }
+
   if(object.type === 'input'){
     let elementHandle = object.element;
     let location = await  getCoordinates(elementHandle, page);
@@ -445,7 +479,7 @@ async function interactWithObject(object, page, currentState, interactionNumber,
       else{
         await fillInput(elementHandle, page);
       }
-      await page.evaluate(_ => {window.scrollTo(0,0)});
+      await page.evaluate(_ => {window.scrollIntoViewIfNeeded});
     }    
   }
   else if(object.type === 'button'){
@@ -489,11 +523,13 @@ async function interactWithObject(object, page, currentState, interactionNumber,
                     fullPage: true});
         }
         else{
-          fs.unlinkSync(screenshots_directory + '/' + 'state_' + currentState + '_interaction_' + (statesDiscovered) + beforeInteraction + '.png',
-            err=>{if(err) console.log(err)})
+          const filePath = screenshots_directory + '/' + 'state_' + currentState + '_interaction_' + (statesDiscovered) + beforeInteraction + '.png';
+          if (fs.existsSync(filePath)){
+            fs.unlinkSync(filePath, err=>{if(err) console.log(err)})
+          }
         }
         await page.evaluate(_ => {
-          window.scrollTo(0,0);
+          window.scrollIntoViewIfNeeded;
         }).catch(err =>{});
       }
     }
@@ -544,7 +580,7 @@ async function interactWithObject(object, page, currentState, interactionNumber,
                 err=>{if(err) console.log(err)})
             }
             await page.evaluate(_ => {
-              window.scrollTo(0,0);
+              window.scrollIntoViewIfNeeded;
             }).catch(err =>{});
           }
         }
@@ -576,11 +612,17 @@ async function elementScreenshot(location, currentState, page, moment){
   });
 }
 async function elementScreenshotwHandle(element, currentState, moment){
-  await element.screenshot({
-    path: screenshots_directory + '/' + 'state_' + currentState + '_interaction_' + (statesDiscovered) + moment + '.png'
-  }).catch((err)=>{
-    console.log(err);
-  });
+
+  if (await element.isVisible()){
+    await element.screenshot({
+      path: screenshots_directory + '/' + 'state_' + currentState + '_interaction_' + (statesDiscovered) + moment + '.png'
+    }).catch((err)=>{
+      console.log(err);
+    });
+  }else{
+    console.log('No se puede ejecutar el screenshot. Elemento oculto');
+  }
+
 }
 
 function createErrorGraph(){
@@ -634,7 +676,7 @@ async function fillInput(elementHandle, page){
   }
   else if(type === 'search'){
     elementHandle.click();
-    page.keyboard.type(faker.random.alphaNumeric());
+    page.keyboard.type(faker.string.alphanumeric());
   }
   else if(type === 'password'){
     elementHandle.click();
@@ -646,11 +688,11 @@ async function fillInput(elementHandle, page){
   }
   else if (type === 'tel'){
     elementHandle.click();
-    page.keyboard.type(faker.phone.phoneNumber()) ;
+    page.keyboard.type(faker.phone.number()) ;
   }
   else if (type === 'number'){
     elementHandle.click();
-    page.keyboard.type(faker.random.number) ;
+    page.keyboard.type(faker.number.int()) ;
   }
   else if(type === 'submit' || type === 'radio' || type === 'checkbox'){
     elementHandle.click();
